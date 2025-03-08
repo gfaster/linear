@@ -35,7 +35,26 @@ lemma exists_common_of_eq {a b : Ty}
   simp at h
   simp [h]
 
+lemma cons_cons_id {Δ₁ Δ₂ : Cx} 
+  : a ::ₘ b ::ₘ Δ₁ = c ::ₘ a ::ₘ Δ₂ ↔ b ::ₘ Δ₁ = c ::ₘ Δ₂ := by
+    constructor
+    · intro h
+      nth_rewrite 2 [Multiset.cons_swap] at h
+      exact (Multiset.cons_inj_right a).mp h
+    · intro h
+      nth_rewrite 2 [Multiset.cons_swap]
+      solve_by_elim
 
+
+lemma cons_cons_id' {Δ₁ Δ₂ : Cx}
+  : a ::ₘ b ::ₘ Δ₁ = b ::ₘ d ::ₘ Δ₂ ↔ a ::ₘ Δ₁ = d ::ₘ Δ₂ := by
+    constructor
+    · intro h
+      rewrite [Multiset.cons_swap] at h
+      exact (Multiset.cons_inj_right b).mp h
+    · intro h
+      rewrite [Multiset.cons_swap]
+      solve_by_elim
 
 lemma rot4' {a b c d : Cx} : a + b + c + d = d + a + b + c := by ac_rfl
 lemma rot4 {a b c d : Cx} : a + b + c + d = b + c + d + a := by ac_rfl

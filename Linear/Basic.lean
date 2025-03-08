@@ -3,6 +3,7 @@ import Mathlib.Tactic.Abel
 import Linear.Defs
 import Linear.Lemmas
 import Linear.Tactic
+import Lean.Meta.Tactic.Grind
 
 
 -- syntax "apply_triv1" : tactic
@@ -13,7 +14,7 @@ import Linear.Tactic
 --       Typed.One_R,
 --       Typed.One_L,
 --       Typed.Tensor_L,
---       Typed.Lolly_R,
+--  Typed.Lolly_R,
 --       Typed.With_R 
 --     ]
 --  ) 
@@ -22,7 +23,6 @@ import Linear.Tactic
 -- elab "exhaust_ty" : tactic =>
 --   withMainContext do
 --     let _goal ← getMainGoal
-
 
 
 @[simp]
@@ -105,13 +105,12 @@ lemma cut_elim_one_r (h2 : Ty.One ::ₘ Δ' ⊢ B) : ∅ + Δ' ⊢ B := by
       constructor <;> assumption
     }
   case Plus_L IH IH' =>
-    obtain ⟨_, hΔ'2⟩ := Multiset.exists_cons_of_mem (mem_of_cons (by simp) h)
-    subst hΔ'2; repeat (rw [Multiset.cons_swap] at h; simp at h)
+    let ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+    substs hΔ1 hΔ2
+    clear h
     simp
-    subst h
-    rw [Multiset.cons_swap] at IH IH'
-    simp at IH IH'
-    constructor <;> assumption
+    simp_cx at IH IH'
+    solve_by_elim [Typed.Plus_L]
   case Plus_R1 IH =>
     apply Typed.Plus_R1
     subst h
@@ -122,6 +121,17 @@ lemma cut_elim_one_r (h2 : Ty.One ::ₘ Δ' ⊢ B) : ∅ + Δ' ⊢ B := by
     subst h
     simp at IH
     simp [IH]
+  case Lolly_L IH1 IH2 =>
+    have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+    clear h
+    subst hΔ1
+    obtain ⟨Δ, ⟨hΔ⟩⟩ := cons_mem_of_add (Eq.symm hΔ2) <;> (
+      subst_vars
+
+
+    )
+
+
     
   repeat1 sorry
 
@@ -183,7 +193,7 @@ theorem cut_elim {Δ Δ' : Cx} {A B : Ty} (h1 : Δ ⊢ A) (h2 : A ::ₘ Δ' ⊢ 
       rw [add_comm]
       apply IH <;> assumption
     case Lolly_L Δl1 Δl2 la lb lc hla hlc IH IH' => 
-      obtain ⟨Δ'2, hΔ'2⟩ := Multiset.exists_cons_of_mem (mem_of_cons _ h)
+      obtain ⟨Δ'2, hΔ'2⟩ := Multiset.exists_cons_of_mem (mem_of_cons (by simp) h)
       subst_vars
       repeat (simp [Multiset.cons_swap] at h)
       rw [add_comm, Multiset.cons_add]
@@ -208,9 +218,9 @@ theorem cut_elim {Δ Δ' : Cx} {A B : Ty} (h1 : Δ ⊢ A) (h2 : A ::ₘ Δ' ⊢ 
       
 
     case With_L1 Δ c d _ _ IH =>
-      by_cases he : c & d ≠ a & b 
+      by_cases hne : a & b ≠ c & d 
       case pos =>
-        obtain ⟨_, hΔ'2⟩ := Multiset.exists_cons_of_mem (mem_of_cons _ h)
+        obtain ⟨_, hΔ'2⟩ := Multiset.exists_cons_of_mem (mem_of_cons hne h)
         rw [hΔ'2]
         rw [hΔ'2] at h; repeat (rw [Multiset.cons_swap] at h; simp at h)
         rw [add_comm, Multiset.cons_add]
@@ -221,17 +231,17 @@ theorem cut_elim {Δ Δ' : Cx} {A B : Ty} (h1 : Δ ⊢ A) (h2 : A ::ₘ Δ' ⊢ 
         simp
         assumption
       case neg =>
-        simp at he
-        obtain ⟨ha, hb⟩ := he
+        simp at hne
+        obtain ⟨ha, hb⟩ := hne
         subst_vars
         simp at h
         subst_eqs
         apply IH1
         assumption
     case With_L2 Δ c d _ _ IH =>
-      by_cases he : c & d ≠ a & b 
+      by_cases hne : a & b ≠ c & d 
       case pos =>
-        obtain ⟨_, hΔ'2⟩ := Multiset.exists_cons_of_mem (mem_of_cons _ h)
+        obtain ⟨_, hΔ'2⟩ := Multiset.exists_cons_of_mem (mem_of_cons hne h)
         rw [hΔ'2]
         rw [hΔ'2] at h; repeat (rw [Multiset.cons_swap] at h; simp at h)
         rw [add_comm, Multiset.cons_add]
@@ -242,8 +252,8 @@ theorem cut_elim {Δ Δ' : Cx} {A B : Ty} (h1 : Δ ⊢ A) (h2 : A ::ₘ Δ' ⊢ 
         simp
         assumption
       case neg =>
-        simp at he
-        obtain ⟨ha, hb⟩ := he
+        simp at hne
+        obtain ⟨ha, hb⟩ := hne
         subst_vars
         simp at h
         subst_eqs
@@ -356,7 +366,7 @@ theorem cut_elim {Δ Δ' : Cx} {A B : Ty} (h1 : Δ ⊢ A) (h2 : A ::ₘ Δ' ⊢ 
       clear h -- trivial
       rw [Multiset.cons_swap] at IH1 IH2; simp at IH1 IH2
       simp
-      constructor <;> assumption
+      constructor <;> trivial
     case Plus_R1 IH1 IH2 => solve_by_elim [Typed.Plus_R1]
     case Plus_R2 IH1 IH2 => solve_by_elim [Typed.Plus_R2]
     case With_L1 IH =>
@@ -369,6 +379,7 @@ theorem cut_elim {Δ Δ' : Cx} {A B : Ty} (h1 : Δ ⊢ A) (h2 : A ::ₘ Δ' ⊢ 
       -- apply Typed.With_L2
       solve_by_elim
     case With_L2 IH =>
+      -- case_start h
       let ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
       substs hΔ1 hΔ2
       clear h
@@ -404,7 +415,6 @@ theorem cut_elim {Δ Δ' : Cx} {A B : Ty} (h1 : Δ ⊢ A) (h2 : A ::ₘ Δ' ⊢ 
         simp at h
         subst h
         rw [Multiset.cons_add]
-        constructor
         solve_by_elim
     case Tensor_L d e f g h IH =>
       by_cases hne: c ≠ e ⊗ f
@@ -412,15 +422,10 @@ theorem cut_elim {Δ Δ' : Cx} {A B : Ty} (h1 : Δ ⊢ A) (h2 : A ::ₘ Δ' ⊢ 
         let ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq hne h
         subst_vars
         clear h
-        -- rw [cons_rot] at IH; simp at IH
-        simp_cx at IH
-
-
-
-
-        -- simp; constructor
-        -- rw [cons_rot]
-        -- assumption
+        -- rw [cons_rot] at IH; simp at IH 
+        simp_cx at IH; rw [←cons_rot] at IH
+        simp
+        solve_by_elim
       case neg =>
         simp at hne
         subst hne
@@ -446,7 +451,391 @@ theorem cut_elim {Δ Δ' : Cx} {A B : Ty} (h1 : Δ ⊢ A) (h2 : A ::ₘ Δ' ⊢ 
         simp at h
         subst h
         simp at IH1 IH2
+        simp
+        rw [add_left_comm, ←Multiset.add_cons]
+        solve_by_elim [Typed.Tensor_R]
+    case Plus_L d e f hf1 hf2 IH1 IH2 =>
+      by_cases hne: c ≠ d ⊕ e
+      case pos =>
+        let ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq hne h
+        substs hΔ1 hΔ2
+        clear h
+        simp [Multiset.cons_swap] at IH1 IH2
+        simp
+        solve_by_elim [Typed.Plus_L]
+      case neg =>
+        simp at hne
+        subst hne
+        simp at h
+        subst h
+        simp
+        solve_by_elim
+    case Plus_R1 IH => solve_by_elim [Typed.Plus_R1]
+    case Plus_R2 IH => solve_by_elim [Typed.Plus_R2]
+    case Lolly_L d e f h1 h2 IH1 IH2 =>
+      by_cases hne: c ≠ d ⊸ e
+      case pos =>
+        have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq hne h
+        substs hΔ1
+        obtain ⟨Δ, ⟨_, _⟩⟩ := cons_mem_of_add (Eq.symm hΔ2) <;> (
+          try subst_vars
+          rw [Multiset.cons_swap] at h;
+          simp at h;
+          subst h;
+          clear hΔ2;
+          simp at IH1 ⊢;
+        )
+        case inl.refl =>
+          conv =>
+            arg 1
+            arg 2
+            rw [←add_assoc, ←Multiset.cons_add]
+          solve_by_elim
+        case inr =>
+          rw [Multiset.cons_swap] at IH2;
+          simp at IH2
+          rw [Multiset.cons_swap] at IH2
+          conv =>
+            arg 1
+            rw [add_left_comm, ←add_assoc, add_rotate]
+            arg 2
+            rw [←Multiset.cons_add, add_comm]
+          solve_by_elim
+      case neg =>
+        clear IH1 IH2
+        simp at hne
+        subst hne
+        simp at h ⊢
+        subst h
+        solve_by_elim
+    case Lolly_R IH1 IH2 =>
+      subst h
+      rw [Multiset.cons_swap] at IH2; simp at IH2
+      constructor
+      simp; rw [Multiset.cons_swap]
+      assumption
+    case With_L1 Δ d e f hf IH =>
+      by_cases hne : c ≠ d & e
+      case pos =>
+        have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq hne h
+        subst hΔ1 hΔ2
+        clear h
+        rw [Multiset.cons_swap] at IH; simp at IH
+        rw [Multiset.cons_swap] at IH
+        simp
+        solve_by_elim [Typed.With_L1]
+      case neg =>
+        clear IH
+        simp at hne ⊢
+        subst hne
+        simp at h
+        subst h
+        solve_by_elim [Typed.With_L1]
+    case With_L2 Δ d e f hf IH =>
+      by_cases hne : c ≠ d & e
+      case pos =>
+        have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq hne h
+        subst hΔ1 hΔ2
+        clear h
+        rw [Multiset.cons_swap] at IH; simp at IH
+        rw [Multiset.cons_swap] at IH
+        simp
+        solve_by_elim [Typed.With_L2]
+      case neg =>
+        clear IH
+        simp at hne ⊢
+        subst hne
+        simp at h
+        subst h
+        solve_by_elim [Typed.With_L2]
+    case With_R IH1 IH2 =>
+      subst h
+      simp at IH1 IH2 ⊢
+      solve_by_elim
+  case Plus_R1 a b ht IH_outer=>
+    generalize h : a ⊕ b ::ₘ Δ' = Δ'' at h2
+    induction h2 generalizing Δ'
+    case One_R IH => absurd h; simp
+    case One_L IH =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      substs hΔ1 hΔ2
+      clear h
+      simp at IH ⊢
+      solve_by_elim
+    case Tensor_L IH =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      substs hΔ1 hΔ2
+      clear h
+      rw [cons_rot] at IH
+      simp at IH ⊢
+      solve_by_elim
+    case Tensor_R IH1 IH2 =>
+      obtain ⟨Δ, ⟨_⟩⟩ := cons_mem_of_add h <;> (
+        subst_vars;
+        simp at h
+        subst h
+      )
+      · nth_rewrite 2 [add_comm]
+        rewrite [add_left_comm, add_comm]
+        solve_by_elim
+      · rewrite [add_left_comm]
+        solve_by_elim
+    case Plus_L c d e h1 h2 IH1 IH2 =>
+      by_cases hne : (a ⊕ b) ≠ c ⊕ d -- paren required for some reason
+      case pos =>
+        have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq hne h
+        substs hΔ1 hΔ2
+        clear h hne
+        rw [Multiset.cons_swap] at IH1 IH2
+        simp at IH1 IH2 ⊢
+        solve_by_elim
+      case neg =>
+        simp at hne
+        obtain ⟨_, _⟩ := hne
+        subst_vars
+        simp at h; subst h
+        solve_by_elim
+    case Plus_R1 IH =>
+      subst h
+      simp at IH
+      solve_by_elim [Typed.Plus_R1]
+    case Plus_R2 IH =>
+      subst h
+      simp at IH
+      solve_by_elim [Typed.Plus_R2]
+    case Lolly_L IH1 IH2 =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      subst hΔ1
+      simp
+      obtain ⟨Δ, ⟨_⟩⟩ := cons_mem_of_add (Eq.symm hΔ2) <;> (
+        subst_vars;
+        simp at hΔ2
+        subst hΔ2
+      )
+      case inl =>
+        simp at IH1
         rw [←add_assoc]
-        apply Typed.Tensor_R
+        solve_by_elim
+      case inr =>
+        rw [Multiset.cons_swap] at IH2
+        simp at IH2
+        rw [add_left_comm]
+        solve_by_elim
+    case Lolly_R IH =>
+      subst h
+      rw [Multiset.cons_swap] at IH
+      simp at IH
+      solve_by_elim
+    case With_L1 IH1 IH2 =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      subst hΔ1 hΔ2
+      rw [Multiset.cons_swap] at IH2
+      simp at IH2 ⊢
+      solve_by_elim [Typed.With_L1]
+    case With_L2 IH1 IH2 =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      subst hΔ1 hΔ2
+      rw [Multiset.cons_swap] at IH2
+      simp at IH2 ⊢
+      solve_by_elim [Typed.With_L2]
+    case With_R IH1 IH2 => solve_by_elim
+  case Plus_R2 a b ht IH_outer=>
+    generalize h : a ⊕ b ::ₘ Δ' = Δ'' at h2
+    induction h2 generalizing Δ'
+    case One_R IH => absurd h; simp
+    case One_L IH =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      substs hΔ1 hΔ2
+      clear h
+      simp at IH ⊢
+      solve_by_elim
+    case Tensor_L IH =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      substs hΔ1 hΔ2
+      clear h
+      rw [cons_rot] at IH
+      simp at IH ⊢
+      solve_by_elim
+    case Tensor_R IH1 IH2 =>
+      obtain ⟨Δ, ⟨_⟩⟩ := cons_mem_of_add h <;> (
+        subst_vars;
+        simp at h
+        subst h
+      )
+      · nth_rewrite 2 [add_comm]
+        rewrite [add_left_comm, add_comm]
+        solve_by_elim
+      · rewrite [add_left_comm]
+        solve_by_elim
+    case Plus_L c d e h1 h2 IH1 IH2 =>
+      by_cases hne : (a ⊕ b) ≠ c ⊕ d -- paren required for some reason
+      case pos =>
+        have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq hne h
+        substs hΔ1 hΔ2
+        clear h hne
+        rw [Multiset.cons_swap] at IH1 IH2
+        simp at IH1 IH2 ⊢
+        solve_by_elim
+      case neg =>
+        simp at hne
+        obtain ⟨_, _⟩ := hne
+        subst_vars
+        simp at h; subst h
+        solve_by_elim
+    case Plus_R1 IH =>
+      subst h
+      simp at IH
+      solve_by_elim [Typed.Plus_R1]
+    case Plus_R2 IH =>
+      subst h
+      simp at IH
+      solve_by_elim [Typed.Plus_R2]
+    case Lolly_L IH1 IH2 =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      subst hΔ1
+      simp
+      obtain ⟨Δ, ⟨_⟩⟩ := cons_mem_of_add (Eq.symm hΔ2) <;> (
+        subst_vars;
+        simp at hΔ2
+        subst hΔ2
+      )
+      case inl =>
+        simp at IH1
+        rw [←add_assoc]
+        solve_by_elim
+      case inr =>
+        rw [Multiset.cons_swap] at IH2
+        simp at IH2
+        rw [add_left_comm]
+        solve_by_elim
+    case Lolly_R IH =>
+      subst h
+      rw [Multiset.cons_swap] at IH
+      simp at IH
+      solve_by_elim
+    case With_L1 IH1 IH2 =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      subst hΔ1 hΔ2
+      rw [Multiset.cons_swap] at IH2
+      simp at IH2 ⊢
+      solve_by_elim [Typed.With_L1]
+    case With_L2 IH1 IH2 =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      subst hΔ1 hΔ2
+      rw [Multiset.cons_swap] at IH2
+      simp at IH2 ⊢
+      solve_by_elim [Typed.With_L2]
+    case With_R IH1 IH2 => solve_by_elim
+  case Lolly_R a b _ IH_outer =>
+    generalize h : a ⊸ b ::ₘ Δ' = Δ'' at h2
+    induction h2 generalizing Δ'
+    case One_R => absurd h; simp
+    case One_L IH =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      subst hΔ1 hΔ2
+      clear h
+      simp
+      solve_by_elim
+    case Tensor_L IH =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      subst hΔ1 hΔ2
+      clear h
+      rw [cons_rot] at IH
+      simp at IH ⊢
+      solve_by_elim
+    case Tensor_R IH1 IH2 =>
+      obtain ⟨Δ, ⟨_⟩⟩ := cons_mem_of_add h <;> (
+        subst_vars;
+        simp at h
+        subst h
+      )
+      case inl =>
+        simp at IH1
+        rw [←add_assoc]
+        solve_by_elim
+      case inr =>
+        simp at IH2
+        rw [add_left_comm]
+        solve_by_elim
+    case Plus_L IH1 IH2 =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      subst hΔ1 hΔ2
+      clear h
+      rewrite [Multiset.cons_swap] at IH1 IH2
+      simp at IH1 IH2 ⊢
+      solve_by_elim
+    case Plus_R1 => solve_by_elim [Typed.Plus_R1]
+    case Plus_R2 => solve_by_elim [Typed.Plus_R2]
+    case Lolly_L c d e h1 h2 IH1 IH2 =>
+      by_cases hne : a ⊸ b ≠ c ⊸ d
+      case pos =>
+        have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq hne h
+        clear h
+        substs hΔ1
+        obtain ⟨Δ, ⟨_⟩⟩ := cons_mem_of_add (Eq.symm hΔ2) <;> (
+          subst_vars;
+          simp at hΔ2
+          subst hΔ2
+        )
+        case inl =>
+          simp at IH1 ⊢
+          rw [←add_assoc]
+          solve_by_elim
+        case inr =>
+          rw [Multiset.cons_swap] at IH2
+          simp at IH2 ⊢
+          rw [←add_assoc, add_right_comm, add_comm]
+          solve_by_elim
+      case neg =>
+        rename' c => a
+        rename' d => b
+        rename' e => c
 
+        -- clear IH1 IH2
+        simp at hne
+        obtain ⟨_⟩ := hne
+        subst_vars
+        simp at h
+        subst h
+        sorry
+    case Lolly_R c d h1 IH =>
+      subst h
+      rw [Multiset.cons_swap] at IH
+      simp at IH
+      solve_by_elim
+    case With_L1 IH =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      clear h
+      substs hΔ1 hΔ2
+      rw [Multiset.cons_swap] at IH
+      simp at IH ⊢
+      solve_by_elim [Typed.With_L1]
+    case With_L2 IH =>
+      have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
+      clear h
+      substs hΔ1 hΔ2
+      rw [Multiset.cons_swap] at IH
+      simp at IH ⊢
+      solve_by_elim [Typed.With_L2]
+    case With_R IH1 IH2 => solve_by_elim
+  case Plus_L =>
+    simp at *
+    solve_by_elim
+  case Lolly_L =>
+    simp
+    rw [add_assoc]
+    constructor
+    · assumption
+    · rw [←Multiset.cons_add]
+      solve_by_elim
+  case With_L1 =>
+    simp
+    apply Typed.With_L1
+    rw [←Multiset.cons_add]
+    solve_by_elim
+  case With_L2 =>
+    simp
+    apply Typed.With_L2
+    rw [←Multiset.cons_add]
+    solve_by_elim
 

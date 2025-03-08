@@ -1,9 +1,7 @@
 import Mathlib.Data.Multiset.Basic
-import Mathlib.Tactic.Abel
 import Linear.Defs
 import Linear.Lemmas
 import Linear.Tactic
-import Lean.Meta.Tactic.Grind
 
 
 -- syntax "apply_triv1" : tactic
@@ -35,7 +33,7 @@ theorem typed_id : {a} ⊢ a := by
     apply Typed.Plus_R2 ; assumption
   | Tensor a b => 
     apply_triv
-    apply Typed.Tensor_R {a} {b} <;> assumption
+    apply @Typed.Tensor_R {a} {b} <;> assumption
   | With a b => 
     apply_triv
     apply Typed.With_L1
@@ -48,7 +46,7 @@ theorem typed_id : {a} ⊢ a := by
     apply_triv
     show {a, a ⊸ b} ⊢ b
     rw [Multiset.pair_comm a (a ⊸ b)]
-    apply Typed.Lolly_L {a} {} <;> assumption
+    apply @Typed.Lolly_L {a} {} <;> assumption
 
 
 
@@ -858,7 +856,7 @@ theorem cut_elim {Δ Δ' : Cx} {A B : Ty} (h1 : Δ ⊢ A) (h2 : A ::ₘ Δ' ⊢ 
     exact IH h2
   case One_R => exact cut_elim_one_r h2
   case With_R Δ1 a b ha hb IH1 IH2 => exact with_r1 ha hb IH1 IH2 h2
-  case Tensor_R a b Δt1 Δt2 ha hb IH1_outer IH2_outer => exact cut_elim_tensor_r Δt1 Δt2 ha hb IH1_outer IH2_outer h2
+  case Tensor_R Δt1 Δt2 a b ha hb IH1_outer IH2_outer => exact cut_elim_tensor_r Δt1 Δt2 ha hb IH1_outer IH2_outer h2
 
   case Tensor_L Δ a b c IH1_outer IH2_outer => exact cut_elim_tensor_l IH1_outer IH2_outer h2
   case Plus_R1 a b ht IH_outer => exact cut_elim_plus_r1 ht IH_outer h2

@@ -25,7 +25,7 @@ inductive Typed : Cx → Ty → Prop where
   | Tensor_L {Δ : Cx} {A B C : Ty}
     : Typed (A ::ₘ B ::ₘ Δ) C → Typed (A ⊗ B ::ₘ Δ) C
 
-  | Tensor_R {A B : Ty} (Δ₁ Δ₂ : Cx) 
+  | Tensor_R {Δ₁ Δ₂ : Cx} {A B : Ty}  
     : Typed Δ₁ A → Typed Δ₂ B → Typed (Δ₁ + Δ₂) (A ⊗ B)
 
   | Plus_L {Δ : Cx} {A B C : Ty}
@@ -37,7 +37,7 @@ inductive Typed : Cx → Ty → Prop where
   | Plus_R2 {Δ : Cx} {A B : Ty}
     : Typed Δ B → Typed Δ (A ⊕ B)
 
-  | Lolly_L (Δ₁ Δ₂ : Cx) {A B C : Ty}
+  | Lolly_L {Δ₁ Δ₂ : Cx} {A B C : Ty}
     : Typed Δ₁ A → Typed (B ::ₘ Δ₂) C → Typed (A ⊸ B ::ₘ (Δ₁ + Δ₂)) C
 
   | Lolly_R {Δ : Cx} {A B : Ty}

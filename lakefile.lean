@@ -7,6 +7,12 @@ package "linear" where
 lean_lib «Linear» where
   -- add library configuration options here
 
+lean_lib «Session» where
+  -- add library configuration options here
+
+lean_lib «Hw01» where
+  -- add library configuration options here
+
 @[default_target]
 lean_exe "linear" where
   root := `Main

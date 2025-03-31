@@ -672,7 +672,7 @@ lemma cut_elim_lolly_l {Δ : Cx} {a b : Ty} (a_1 : a ::ₘ Δ ⊢ b)
   (IH_outer : ∀ {Δ' : Cx} {B : Ty}, b ::ₘ Δ' ⊢ B → a ::ₘ Δ + Δ' ⊢ B) {Δ' : Cx} {B : Ty} (h2 : a ⊸ b ::ₘ Δ' ⊢ B) :
   Δ + Δ' ⊢ B := by
   generalize h : a ⊸ b ::ₘ Δ' = Δ'' at h2
-  induction h2 generalizing Δ'
+  induction h2 generalizing Δ' a
   case One_R => absurd h; simp
   case One_L IH =>
     have ⟨Δ, ⟨hΔ1, hΔ2⟩⟩ := exists_common_of_eq (by simp) h
@@ -741,6 +741,7 @@ lemma cut_elim_lolly_l {Δ : Cx} {a b : Ty} (a_1 : a ::ₘ Δ ⊢ b)
       subst_vars
       simp at h
       subst h
+
       sorry
   case Lolly_R c d h1 IH =>
     subst h
